@@ -10,5 +10,9 @@
     "title": "概览",
     "analytics": "分析页",
     "workspace": "工作台"
+  },
+  "finance": {
+    "title": "财务工具",
+    "orderFill": "凑数字"
   }
 }
