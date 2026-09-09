@@ -22,6 +22,16 @@ const routes: RouteRecordRaw[] = [
         path: '/finance/order-fill',
         component: () => import('#/views/finance/order-fill/index.vue'),
       },
+      {
+        meta: {
+          icon: 'lucide:receipt',
+          keepAlive: true,
+          title: $t('page.finance.taxCalc'),
+        },
+        name: 'FinanceTaxCalc',
+        path: '/finance/tax-calc',
+        component: () => import('#/views/finance/tax-calc/index.vue'),
+      },
     ],
   },
 ];

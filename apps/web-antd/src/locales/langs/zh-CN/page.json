@@ -13,6 +13,7 @@
   },
   "finance": {
     "title": "财务工具",
-    "orderFill": "凑数字"
+    "orderFill": "凑数字",
+    "taxCalc": "税务计算"
   }
 }
