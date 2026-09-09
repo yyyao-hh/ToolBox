@@ -120,7 +120,6 @@ function clearAll() {
 function loadExample() {
   numbers.value = [...EXAMPLE_NUMBERS];
   message.success('已载入示例数据');
-  compute(false);
 }
 
 /**
@@ -159,9 +158,9 @@ watch([cityType, halfRateEnabled], () => {
   if (numbers.value.length > 0) compute(true);
 });
 
-// 金额变动：若已有结果则自动重算，保持结果始终新鲜（不自动首次计算）
+// 金额变动：自动计算结果（添加/移除均触发；清空时由下方 watch 清空结果）
 watch([() => numbers.value.length, totalSum], () => {
-  if (numbers.value.length > 0 && result.value) compute(true);
+  if (numbers.value.length > 0) compute(true);
 });
 
 // 金额清空时清空结果
