@@ -28,6 +28,7 @@
   "dependencies": {
     "ant-design-vue": "catalog:",
     "dayjs": "catalog:",
+    "decimal.js": "catalog:",
     "pinia": "catalog:",
     "vue": "catalog:",
     "vue-router": "catalog:",

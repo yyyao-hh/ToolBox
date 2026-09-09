@@ -10,6 +10,7 @@ import {
   Checkbox,
   Empty,
   Input,
+  InputNumber,
   message,
   Radio,
   Typography,
@@ -20,7 +21,12 @@ import { Icon } from '#/components/Icon';
 import { Tooltip } from '#/components/Tooltip';
 
 import NumberTag from './number-tag.vue';
-import { calculateTaxes, formatMoney, parseNumberList } from './tax-formula';
+import {
+  calculateTaxes,
+  DEFAULT_VAT_RATE_PERMIL,
+  formatMoney,
+  parseNumberList,
+} from './tax-formula';
 
 defineOptions({ name: 'FinanceTaxCalc' });
 
@@ -34,6 +40,7 @@ const numbers = ref<number[]>([]);
 const numberInputValue = ref('');
 const cityType = ref<CityType>('city');
 const halfRateEnabled = ref(true);
+const vatPermil = ref<number>(DEFAULT_VAT_RATE_PERMIL);
 const result = ref<null | TaxResult>(null);
 
 // 复制结果金额的反馈状态
@@ -131,9 +138,14 @@ function compute(silent: boolean): null | TaxResult {
     if (!silent) message.error('请先添加至少一个金额');
     return null;
   }
+  if (!Number.isFinite(vatPermil.value) || vatPermil.value < 0) {
+    if (!silent) message.error('请输入有效的增值税率（‰）');
+    return null;
+  }
   result.value = calculateTaxes(totalSum.value, {
     cityType: cityType.value,
     halfRate: halfRateEnabled.value,
+    vatRatePermil: vatPermil.value,
   });
   if (!silent) message.success('计算完成！');
   return result.value;
@@ -141,6 +153,18 @@ function compute(silent: boolean): null | TaxResult {
 
 function calculate() {
   compute(false);
+}
+
+/**
+ * 增值税率输入框受控更新：清空或非法时回退默认值，保证税率始终是有效非负数。
+ */
+function handleVatRateChange(val: null | number | string) {
+  if (val === null || val === undefined || val === '') {
+    vatPermil.value = DEFAULT_VAT_RATE_PERMIL;
+    return;
+  }
+  const n = typeof val === 'number' ? val : Number.parseFloat(val);
+  vatPermil.value = Number.isFinite(n) && n >= 0 ? n : DEFAULT_VAT_RATE_PERMIL;
 }
 
 /** 复制某一行结果金额到剪贴板，并在该单元格短暂显示「✓」反馈 */
@@ -153,8 +177,8 @@ function copyRowValue(row: { label: string; value: number }) {
   }, 1200);
 }
 
-// 城建税类型 / 减半征收变更：与 demo 一致，有金额即自动计算
-watch([cityType, halfRateEnabled], () => {
+// 税务选项（城建税类型 / 减半征收 / 增值税率）变更：有金额即自动重算
+watch([cityType, halfRateEnabled, vatPermil], () => {
   if (numbers.value.length > 0) compute(true);
 });
 
@@ -277,10 +301,25 @@ onBeforeUnmount(() => {
         class="!flex min-h-0 !flex-col overflow-hidden"
         title="🎛️ 税务选项 &amp; 计算结果"
       >
-        <Radio.Group v-model:value="cityType" class="mb-3 flex-none">
-          <Radio.Button value="city">🏙️ 市（城建税 7%）</Radio.Button>
-          <Radio.Button value="county">🏘️ 县（城建税 5%）</Radio.Button>
-        </Radio.Group>
+        <div class="mb-3 flex flex-none flex-wrap items-center gap-3">
+          <Radio.Group v-model:value="cityType">
+            <Radio.Button value="city">🏙️ 市（城建税 7%）</Radio.Button>
+            <Radio.Button value="county">🏘️ 县（城建税 5%）</Radio.Button>
+          </Radio.Group>
+          <div
+            class="text-muted-foreground flex items-center gap-1.5 whitespace-nowrap text-sm"
+          >
+            增值税率
+            <InputNumber
+              :value="vatPermil"
+              :min="0"
+              :step="1"
+              class="!w-24"
+              @change="handleVatRateChange"
+            />
+            %
+          </div>
+        </div>
 
         <div
           class="border-border bg-card mb-3 flex flex-none items-center gap-2 rounded-lg border px-3.5 py-2.5 text-sm"
@@ -370,9 +409,9 @@ onBeforeUnmount(() => {
     <div
       class="text-muted-foreground mt-5 flex-none text-center text-xs leading-relaxed"
     >
-      ⚡ 税率：增值税 4‰，城建税（市 7%、县 5%），教育附加 3%，地方教育附加
-      2%，印花税（买卖合同） 0.03%。附加税可选择是否减半。支持 Ctrl/Cmd + Enter
-      快捷计算。
+      ⚡ 税率：增值税 {{ vatPermil ?? '—' }}‰（可配置），城建税（市 7%、县
+      5%），教育附加 3%，地方教育附加 2%，印花税（买卖合同）
+      0.03%。附加税可选择是否减半。支持 Ctrl/Cmd + Enter 快捷计算。
     </div>
   </Page>
 </template>
