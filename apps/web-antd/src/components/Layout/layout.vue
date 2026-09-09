@@ -15,19 +15,21 @@ import {
   usePreferences,
 } from '#/preferences';
 import { useAccessStore } from '#/store';
+import { ELEMENT_ID_LAYOUT_SCROLL } from '#/shared/constants';
 import { cloneDeep, mapTree } from '#/utils';
 
 import { AdminLayout } from './LayoutUi';
 import { BackTop } from './BackTop';
+import { useLayoutScroll } from './use-layout-scroll';
 import { Logo } from './Logo';
 
 import { Breadcrumb } from './Breadcrumb';
 import { CheckUpdates } from './CheckUpdates';
 import { Preferences } from '#/components/Preferences';
-import { LayoutContent, LayoutContentSpinner } from './LayoutContent';
+import { LayoutContent } from './LayoutContent';
 import { Copyright } from './Copyright';
-import { LayoutFooter } from './LayoutFooter';
-import { LayoutHeader } from './LayoutHeader';
+import LayoutFooter from './layout-footer.vue';
+import LayoutHeader from './layout-header.vue';
 import {
   LayoutExtraMenu,
   LayoutMenu,
@@ -56,6 +58,9 @@ const {
 } = usePreferences();
 const accessStore = useAccessStore();
 const { refresh } = useRefresh();
+
+const layoutScrollTarget = `#${ELEMENT_ID_LAYOUT_SCROLL}`;
+useLayoutScroll();
 
 const sidebarTheme = computed(() => {
   const dark = isDark.value || preferences.theme.semiDarkSidebar;
@@ -142,14 +147,6 @@ function wrapperMenus(menus: MenuRecordRaw[], deep: boolean = true) {
       });
 }
 
-function toggleSidebar() {
-  preferencesManager.updatePreferences({
-    sidebar: {
-      hidden: !preferences.sidebar.hidden,
-    },
-  });
-}
-
 function clearPreferencesAndLogout() {
   emit('clearPreferencesAndLogout');
 }
@@ -201,13 +198,6 @@ const headerSlots = computed(() => {
 <template>
   <AdminLayout
     v-model:sidebar-extra-visible="sidebarExtraVisible"
-    :content-compact="preferences.app.contentCompact"
-    :content-compact-width="preferences.app.contentCompactWidth"
-    :content-padding="preferences.app.contentPadding"
-    :content-padding-bottom="preferences.app.contentPaddingBottom"
-    :content-padding-left="preferences.app.contentPaddingLeft"
-    :content-padding-right="preferences.app.contentPaddingRight"
-    :content-padding-top="preferences.app.contentPaddingTop"
     :footer-enable="preferences.footer.enable"
     :footer-fixed="preferences.footer.fixed"
     :footer-height="preferences.footer.height"
@@ -236,7 +226,6 @@ const headerSlots = computed(() => {
     :tabbar-height="preferences.tabbar.height"
     :z-index="preferences.app.zIndex"
     @side-mouse-leave="handleSideMouseLeave"
-    @toggle-sidebar="toggleSidebar"
     @update:sidebar-collapse="
       (value: boolean) => preferencesManager.updatePreferences({ sidebar: { collapsed: value } })
     "
@@ -271,10 +260,23 @@ const headerSlots = computed(() => {
     </template>
     <!-- 头部区域 -->
     <template #header>
-      <LayoutHeader
-        :theme="theme"
-        @clear-preferences-and-logout="clearPreferencesAndLogout"
-      >
+      <LayoutHeader @clear-preferences-and-logout="clearPreferencesAndLogout">
+        <template #logo>
+          <Logo
+            v-if="preferences.logo.enable"
+            :fit="preferences.logo.fit"
+            :class="logoClass"
+            :collapsed="logoCollapsed"
+            :src="preferences.logo.source"
+            :text="preferences.app.name"
+            :theme="showHeaderNav ? headerTheme : theme"
+            @click="clickLogo"
+          >
+            <template v-if="$slots['logo-text']" #text>
+              <slot name="logo-text"></slot>
+            </template>
+          </Logo>
+        </template>
         <template
           v-if="!showHeaderNav && preferences.breadcrumb.enable"
           #breadcrumb
@@ -357,26 +359,29 @@ const headerSlots = computed(() => {
       </Logo>
     </template>
 
-    <template #tabbar>
+    <template #tabbar="{ height, style }">
       <LayoutTabbar
-        v-if="preferences.tabbar.enable"
+        :height="height"
+        :style="style"
         :show-icon="preferences.tabbar.showIcon"
         :theme="theme"
       />
     </template>
 
     <!-- 主体内容 -->
-    <template #content>
-      <LayoutContent />
-    </template>
-
-    <template v-if="preferences.transition.loading" #content-overlay>
-      <LayoutContentSpinner />
+    <template #content="{ contentStyle }">
+      <LayoutContent :content-style="contentStyle" />
     </template>
 
     <!-- 页脚 -->
-    <template v-if="preferences.footer.enable" #footer>
-      <LayoutFooter>
+    <template #footer="{ fixed, height, show, width, zIndex }">
+      <LayoutFooter
+        :fixed="fixed"
+        :height="height"
+        :show="show"
+        :width="width"
+        :z-index="zIndex"
+      >
         <Copyright
           v-if="preferences.copyright.enable"
           v-bind="preferences.copyright"
@@ -401,7 +406,7 @@ const headerSlots = computed(() => {
           @clear-preferences-and-logout="clearPreferencesAndLogout"
         />
       </template>
-      <BackTop />
+      <BackTop :target="layoutScrollTarget" />
     </template>
   </AdminLayout>
 </template>

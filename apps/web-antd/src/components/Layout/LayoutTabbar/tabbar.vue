@@ -14,7 +14,14 @@ defineOptions({
   name: 'LayoutTabbar',
 });
 
-defineProps<{ showIcon?: boolean; theme?: string }>();
+defineProps<{
+  /**
+   * 高度
+   */
+  height: number;
+  showIcon?: boolean;
+  theme?: string;
+}>();
 
 const route = useRoute();
 const tabbarStore = useTabbarStore();
@@ -48,28 +55,33 @@ if (!preferences.tabbar.persist) {
 </script>
 
 <template>
-  <TabsView
-    :active="currentActive"
-    :class="theme"
-    :context-menus="createContextMenus"
-    :draggable="preferences.tabbar.draggable"
-    :show-icon="showIcon"
-    :style-type="preferences.tabbar.styleType"
-    :tabs="currentTabs"
-    :wheelable="preferences.tabbar.wheelable"
-    :middle-click-to-close="preferences.tabbar.middleClickToClose"
-    @close="handleClose"
-    @sort-tabs="tabbarStore.sortTabs"
-    @unpin="unpinTab"
-    @update:active="handleClick"
-  />
-  <div class="flex-center h-full">
-    <TabsToolMore v-if="preferences.tabbar.showMore" :menus="menus" />
-    <TabsToolScreen
-      v-if="preferences.tabbar.showMaximize"
-      :screen="contentIsMaximize"
-      @change="toggleMaximize"
-      @update:screen="toggleMaximize"
+  <section
+    :style="{ height: `${height}px` }"
+    class="border-border bg-background flex w-full border-b transition-all"
+  >
+    <TabsView
+      :active="currentActive"
+      :class="theme"
+      :context-menus="createContextMenus"
+      :draggable="preferences.tabbar.draggable"
+      :show-icon="showIcon"
+      :style-type="preferences.tabbar.styleType"
+      :tabs="currentTabs"
+      :wheelable="preferences.tabbar.wheelable"
+      :middle-click-to-close="preferences.tabbar.middleClickToClose"
+      @close="handleClose"
+      @sort-tabs="tabbarStore.sortTabs"
+      @unpin="unpinTab"
+      @update:active="handleClick"
     />
-  </div>
+    <div class="flex-center h-full">
+      <TabsToolMore v-if="preferences.tabbar.showMore" :menus="menus" />
+      <TabsToolScreen
+        v-if="preferences.tabbar.showMaximize"
+        :screen="contentIsMaximize"
+        @change="toggleMaximize"
+        @update:screen="toggleMaximize"
+      />
+    </div>
+  </section>
 </template>

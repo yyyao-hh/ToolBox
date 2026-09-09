@@ -5,7 +5,7 @@ import { computed, shallowRef, useSlots, watchEffect } from 'vue';
 
 import { Scrollbar } from '#/components/Scrollbar';
 
-import { useScrollLock } from '@vueuse/core';
+import { useScrollLock } from '#/hooks';
 
 import SidebarCollapseButton from './sidebar-collapse-button.vue';
 import SidebarFixedButton from './sidebar-fixed-button.vue';
@@ -112,7 +112,7 @@ const expandOnHovering = defineModel<boolean>('expandOnHovering');
 const expandOnHover = defineModel<boolean>('expandOnHover');
 const extraVisible = defineModel<boolean>('extraVisible');
 
-const isLocked = useScrollLock(document.body);
+const isLocked = useScrollLock({ immediate: false });
 const slots = useSlots();
 
 const asideRef = shallowRef<HTMLDivElement | null>();

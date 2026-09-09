@@ -16,7 +16,7 @@ const defaultPreferences: Preferences = {
     contentPaddingRight: 0,
     contentPaddingTop: 0,
     defaultAvatar:
-      'https://unpkg.com/@vbenjs/static-source@0.1.7/source/avatar-v1.webp',
+      'https://bee-reg-ab.imagency.cn/mr/5867/26/bcc8a1a0426d71a7b56a600dcc6854e3.jpg',
     defaultHomePath: '/analytics',
     dynamicTitle: true,
     enableCheckUpdates: true,

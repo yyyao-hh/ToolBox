@@ -1,3 +1,5 @@
+import { ELEMENT_ID_LAYOUT_SCROLL } from '../constants/globals';
+
 export interface VisibleDomRect {
   bottom: number;
   height: number;
@@ -70,7 +72,24 @@ export function getScrollbarWidth() {
   return scrollbarWidth;
 }
 
-export function needsScrollbar() {
+export function getLayoutScrollElement() {
+  return document.querySelector<HTMLElement>(`#${ELEMENT_ID_LAYOUT_SCROLL}`);
+}
+
+function elementNeedsScrollbar(element: HTMLElement) {
+  const overflowY = window.getComputedStyle(element).overflowY;
+  if (overflowY === 'hidden' || overflowY === 'clip') {
+    return false;
+  }
+
+  return element.scrollHeight > element.clientHeight;
+}
+
+export function needsScrollbar(target?: HTMLElement | null) {
+  if (target) {
+    return elementNeedsScrollbar(target);
+  }
+
   const doc = document.documentElement;
   const body = document.body;
 

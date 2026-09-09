@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import type { CSSProperties } from 'vue';
 import type { VNode } from 'vue';
 import type {
   RouteLocationNormalizedLoaded,
@@ -8,18 +9,62 @@ import type {
 import { computed } from 'vue';
 import { RouterView } from 'vue-router';
 
+import { useLayoutContentStyle } from '#/hooks';
 import { preferences, usePreferences } from '#/preferences';
 import { getTabKey, storeToRefs, useTabbarStore } from '#/store';
+import { Slot } from '#/components/ShadcnComponents';
+import { ELEMENT_ID_MAIN_CONTENT } from '#/shared/constants';
 
 import { IFrameRouterView } from '../Iframe';
+import LayoutContentSpinner from './content-spinner.vue';
 
 defineOptions({ name: 'LayoutContent' });
 
+interface Props {
+  /**
+   * AdminLayout 透传的内容区样式
+   * 主要用于固定头部/页脚时的 marginTop、paddingBottom 定位（依赖滚动等运行时状态）
+   */
+  contentStyle?: CSSProperties;
+}
+
+defineProps<Props>();
+
 const tabbarStore = useTabbarStore();
 const { keepAlive } = usePreferences();
+const { contentElement, overlayStyle } = useLayoutContentStyle();
 
 const { getCachedTabs, getExcludeCachedTabs, renderRouteView } =
   storeToRefs(tabbarStore);
+
+/**
+ * 内容区自身的样式：定宽布局 + 各方向内边距 + flex:1
+ */
+const style = computed((): CSSProperties => {
+  const {
+    contentCompact,
+    contentCompactWidth,
+    contentPadding,
+    contentPaddingBottom,
+    contentPaddingLeft,
+    contentPaddingRight,
+    contentPaddingTop,
+  } = preferences.app;
+
+  const compactStyle: CSSProperties =
+    contentCompact === 'compact'
+      ? { margin: '0 auto', width: `${contentCompactWidth}px` }
+      : {};
+  return {
+    ...compactStyle,
+    flex: 1,
+    padding: `${contentPadding}px`,
+    paddingBottom: `${contentPaddingBottom}px`,
+    paddingLeft: `${contentPaddingLeft}px`,
+    paddingRight: `${contentPaddingRight}px`,
+    paddingTop: `${contentPaddingTop}px`,
+  };
+});
 
 /**
  * 是否使用动画
@@ -97,52 +142,62 @@ function transformComponent(
 </script>
 
 <template>
-  <div class="relative h-full">
-    <IFrameRouterView />
-    <RouterView v-slot="{ Component, route }">
-      <Transition
-        v-if="getEnabledTransition"
-        :name="getTransitionName(route)"
-        appear
-        mode="out-in"
-      >
-        <KeepAlive
-          v-if="keepAlive"
-          :exclude="getExcludeCachedTabs"
-          :include="getCachedTabs"
+  <main
+    :id="ELEMENT_ID_MAIN_CONTENT"
+    ref="contentElement"
+    :style="[style, contentStyle]"
+    class="bg-background-deep relative transition-[margin-top] duration-200"
+  >
+    <Slot :style="overlayStyle">
+      <LayoutContentSpinner v-if="preferences.transition.loading" />
+    </Slot>
+    <div class="relative h-full">
+      <IFrameRouterView />
+      <RouterView v-slot="{ Component, route }">
+        <Transition
+          v-if="getEnabledTransition"
+          :name="getTransitionName(route)"
+          appear
+          mode="out-in"
         >
+          <KeepAlive
+            v-if="keepAlive"
+            :exclude="getExcludeCachedTabs"
+            :include="getCachedTabs"
+          >
+            <component
+              :is="transformComponent(Component, route)"
+              v-if="renderRouteView"
+              v-show="!route.meta.iframeSrc"
+              :key="getTabKey(route)"
+            />
+          </KeepAlive>
           <component
-            :is="transformComponent(Component, route)"
-            v-if="renderRouteView"
-            v-show="!route.meta.iframeSrc"
+            :is="Component"
+            v-else-if="renderRouteView"
             :key="getTabKey(route)"
           />
-        </KeepAlive>
-        <component
-          :is="Component"
-          v-else-if="renderRouteView"
-          :key="getTabKey(route)"
-        />
-      </Transition>
-      <template v-else>
-        <KeepAlive
-          v-if="keepAlive"
-          :exclude="getExcludeCachedTabs"
-          :include="getCachedTabs"
-        >
+        </Transition>
+        <template v-else>
+          <KeepAlive
+            v-if="keepAlive"
+            :exclude="getExcludeCachedTabs"
+            :include="getCachedTabs"
+          >
+            <component
+              :is="transformComponent(Component, route)"
+              v-if="renderRouteView"
+              v-show="!route.meta.iframeSrc"
+              :key="getTabKey(route)"
+            />
+          </KeepAlive>
           <component
-            :is="transformComponent(Component, route)"
-            v-if="renderRouteView"
-            v-show="!route.meta.iframeSrc"
+            :is="Component"
+            v-else-if="renderRouteView"
             :key="getTabKey(route)"
           />
-        </KeepAlive>
-        <component
-          :is="Component"
-          v-else-if="renderRouteView"
-          :key="getTabKey(route)"
-        />
-      </template>
-    </RouterView>
-  </div>
+        </template>
+      </RouterView>
+    </div>
+  </main>
 </template>
